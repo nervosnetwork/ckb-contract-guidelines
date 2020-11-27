@@ -1,0 +1,6 @@
+[submodule "c/deps/ckb-c-stdlib"]
+	path = c/deps/ckb-c-stdlib
+	url = https://github.com/nervosnetwork/ckb-c-stdlib
+[submodule "c/deps/simulator"]
+	path = c/deps/simulator
+	url = https://github.com/nervosnetwork/ckb-x64-simulator
