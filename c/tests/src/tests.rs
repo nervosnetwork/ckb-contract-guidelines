@@ -168,3 +168,91 @@ fn test_sudt_transfer() {
     let setup_json = to_string_pretty(&setup).expect("serialize to json");
     fs::write(folder.join("setup.json"), setup_json).expect("write setup to local file");
 }
+
+#[test]
+fn test_sudt_transfer_failure() {
+    // deploy contract
+    let mut context = Context::default();
+    let sudt_bin: Bytes = Loader::default().load_binary("simple_udt");
+    let sudt_out_point = context.deploy_cell(sudt_bin);
+    let always_success_out_point = context.deploy_cell(ALWAYS_SUCCESS.clone());
+
+    // prepare scripts
+    let lock_script = context
+        .build_script(&always_success_out_point, random_32bytes())
+        .expect("lock script");
+    let lock_script_dep = CellDep::new_builder()
+        .out_point(always_success_out_point.clone())
+        .build();
+    let lock_script2 = context
+        .build_script(&always_success_out_point, random_32bytes())
+        .expect("lock script");
+    let governance_script = context
+        .build_script(&always_success_out_point, random_32bytes())
+        .expect("lock script");
+    let governance_script_hash = governance_script.calc_script_hash();
+    let sudt_type_script = context
+        .build_script(&sudt_out_point, governance_script_hash.raw_data())
+        .expect("script");
+    let sudt_script_dep = CellDep::new_builder()
+        .out_point(sudt_out_point.clone())
+        .build();
+
+    // prepare cells
+    let input_out_point = context.create_cell(
+        CellOutput::new_builder()
+            .capacity(1000u64.pack())
+            .lock(lock_script.clone())
+            .type_(
+                ScriptOpt::new_builder()
+                    .set(Some(sudt_type_script.clone()))
+                    .build(),
+            )
+            .build(),
+        amount_to_data(100),
+    );
+    let input = CellInput::new_builder()
+        .previous_output(input_out_point)
+        .build();
+    let outputs = vec![CellOutput::new_builder()
+        .capacity(999u64.pack())
+        .lock(lock_script2.clone())
+        .type_(
+            ScriptOpt::new_builder()
+                .set(Some(sudt_type_script.clone()))
+                .build(),
+        )
+        .build()];
+
+    let outputs_data = vec![amount_to_data(110)];
+
+    // build transaction
+    let tx = TransactionBuilder::default()
+        .input(input)
+        .outputs(outputs)
+        .outputs_data(outputs_data.pack())
+        .cell_dep(lock_script_dep)
+        .cell_dep(sudt_script_dep)
+        .build();
+    let tx = context.complete_tx(tx);
+
+    // run
+    context
+        .verify_tx(&tx, MAX_CYCLES)
+        .expect_err("fail verification");
+
+    // dump raw test tx files
+    let folder = create_test_folder("sudt_transfer_failure");
+    let mock_tx = build_mock_transaction(&tx, &context);
+    let repr_tx: ReprMockTransaction = mock_tx.into();
+    let tx_json = to_string_pretty(&repr_tx).expect("serialize to json");
+    fs::write(folder.join("tx.json"), tx_json).expect("write tx to local file");
+    let setup = RunningSetup {
+        is_lock_script: false,
+        is_output: false,
+        script_index: 0,
+        native_binaries: HashMap::default(),
+    };
+    let setup_json = to_string_pretty(&setup).expect("serialize to json");
+    fs::write(folder.join("setup.json"), setup_json).expect("write setup to local file");
+}
