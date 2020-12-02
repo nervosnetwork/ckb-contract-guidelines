@@ -9,7 +9,7 @@ ENVIRONMENT := debug
 
 SIMULATOR_CC := gcc
 SIMULATOR_LIB := deps/simulator/target/release/libckb_x64_simulator.a
-SIMULATOR_CFLAGS := -fno-builtin-printf -fno-builtin-memcmp -I deps/ckb-c-stdlib -I deps/ckb-c-stdlib/molecule -Wall -Werror -Wno-nonnull -Wno-nonnull-compare -Wno-unused-function -g -DCKB_STDLIB_NO_SYSCALL_IMPL
+SIMULATOR_CFLAGS := -fno-builtin-printf -fno-builtin-memcmp -I deps/ckb-c-stdlib -I deps/ckb-c-stdlib/molecule -Wall -Werror -Wno-nonnull -Wno-nonnull-compare -Wno-unused-function -g -DCKB_STDLIB_NO_SYSCALL_IMPL -fprofile-arcs -ftest-coverage
 SIMULATOR_LDFLAGS := -lpthread -ldl
 
 # docker pull nervos/ckb-riscv-gnu-toolchain:gnu-bionic-20191012
@@ -29,14 +29,13 @@ build/$(ENVIRONMENT)/simple_udt_sim: simple_udt.c ${SIMULATOR_LIB}
 build/$(ENVIRONMENT)/simple_udt: simple_udt.c
 	mkdir -p build/$(ENVIRONMENT)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $<
-	$(OBJCOPY) --only-keep-debug $@ $@.debug
-	$(OBJCOPY) --strip-debug --strip-all $@
+	$(OBJCOPY) --strip-debug --strip-all $@ $@.strip
 
 ${SIMULATOR_LIB}:
 	cd deps/simulator && cargo build --release
 
 clean:
-	rm -rf build/$(ENVIRONMENT)/simple_udt build/$(ENVIRONMENT)/simple_udt_sim
+	rm -rf build/$(ENVIRONMENT)
 	cd deps/simulator && cargo clean
 
 dist: clean all simulators
