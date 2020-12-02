@@ -22,6 +22,14 @@ all-via-docker:
 
 simulators: build/$(ENVIRONMENT)/simple_udt_sim
 
+test: all simulators
+	cd tests && cargo test
+	scripts/run_sim_tests.sh $(ENVIRONMENT)
+
+coverage: test
+	mkdir -p build/coverage
+	gcovr -r . -e deps --html --html-details -o build/coverage/coverage.html -s
+
 build/$(ENVIRONMENT)/simple_udt_sim: simple_udt.c ${SIMULATOR_LIB}
 	mkdir -p build/$(ENVIRONMENT)
 	$(SIMULATOR_CC) $(SIMULATOR_CFLAGS) $(SIMULATOR_LDFLAGS) -o $@ $^
@@ -35,7 +43,8 @@ ${SIMULATOR_LIB}:
 	cd deps/simulator && cargo build --release
 
 clean:
-	rm -rf build/$(ENVIRONMENT)
+	rm -rf build/$(ENVIRONMENT) build/coverage
+	rm -rf *.gcov *.gcda *.gcno
 	cd deps/simulator && cargo clean
 
 dist: clean all simulators
@@ -44,4 +53,4 @@ fmt:
 	clang-format -i -style=Google $(wildcard *.h *.c)
 	git diff --exit-code
 
-.PHONY: all all-via-docker simulators clean dist fmt
+.PHONY: all all-via-docker simulators clean dist fmt test coverage
