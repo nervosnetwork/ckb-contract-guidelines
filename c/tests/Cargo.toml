@@ -10,7 +10,7 @@ blake2b-ref = "0.1.0"
 ckb-standalone-debugger = { git = "https://github.com/xxuejie/ckb-standalone-debugger", rev = "4fe1239" }
 ckb-tool = "0.2.2"
 ckb-testtool = "0.2.2"
-ckb-x64-simulator = { git = "https://github.com/nervosnetwork/ckb-x64-simulator", rev = "af5e3e8" }
+ckb-x64-simulator = "0.4.0"
 lazy_static = "1.4"
 serde_json = "1.0"
 rand = "0.7.3"

@@ -616,6 +616,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "ckb-standalone-debugger"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a7328033953b0bbfec1697d1a32d9f0e86de9f99e56ee218741f15a8afc79d69"
+dependencies = [
+ "ckb-error",
+ "ckb-jsonrpc-types",
+ "ckb-script",
+ "ckb-traits",
+ "ckb-types",
+ "faster-hex 0.4.1",
+ "js-sys",
+ "serde",
+ "serde_derive",
+ "serde_json",
+ "serde_plain",
+ "wasm-bindgen",
+]
+
+[[package]]
 name = "ckb-store"
 version = "0.37.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -772,12 +792,14 @@ checksum = "062e91a4ae2eb8a79ad9ba78471bff0eb82ea313a4d6a04b2d454c6553b13fa9"
 
 [[package]]
 name = "ckb-x64-simulator"
-version = "0.1.0"
-source = "git+https://github.com/nervosnetwork/ckb-x64-simulator?rev=af5e3e8#af5e3e84c9b310f2bc7c5adbd95254b636ed45a9"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "26b44e719a0e7ce1dc9fffa09323870df5149003a7aa05950b5b06d28eaf65a5"
 dependencies = [
  "cc",
- "ckb-standalone-debugger",
+ "ckb-standalone-debugger 0.3.0",
  "ckb-types",
+ "faster-hex 0.4.1",
  "lazy_static",
  "serde",
  "serde_derive",
@@ -3039,7 +3061,7 @@ name = "tests"
 version = "0.1.0"
 dependencies = [
  "blake2b-ref",
- "ckb-standalone-debugger",
+ "ckb-standalone-debugger 0.2.0",
  "ckb-testtool",
  "ckb-tool",
  "ckb-x64-simulator",
