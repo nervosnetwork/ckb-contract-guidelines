@@ -117,22 +117,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cf1de2fe8c75bc145a2f577add951f8134889b4795d47466a54a5c846d691693"
 
 [[package]]
+name = "blake2b-ref"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d9f6b7b71e3097ed6ee470bab30e1025dd1327eee94ab1e3040b5b5c3f992117"
+
+[[package]]
 name = "blake2b-rs"
 version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6e35e362830ef90ecea16f09b21b75d22d33a8562a679c74ab4f4fa49b4fcb87"
 dependencies = [
  "cc",
-]
-
-[[package]]
-name = "blake2b-rs"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a89a8565807f21b913288968e391819e7f9b2f0f46c7b89549c051cccf3a2771"
-dependencies = [
- "cc",
- "cty",
 ]
 
 [[package]]
@@ -436,7 +432,7 @@ version = "0.37.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7508217d38998e44b783e1d6fdf2a5d77f1ae2c425a1bca0dd08ac9b22e3bac5"
 dependencies = [
- "blake2b-rs 0.1.5",
+ "blake2b-rs",
 ]
 
 [[package]]
@@ -680,7 +676,7 @@ version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "261dd95a93c09ea24397c85b4fbca061e1da2d6573189749aeb99fe840aaf0c9"
 dependencies = [
- "blake2b-rs 0.1.5",
+ "blake2b-rs",
  "faster-hex 0.3.1",
  "includedir",
  "includedir_codegen",
@@ -1034,12 +1030,6 @@ dependencies = [
  "cfg-if 1.0.0",
  "lazy_static",
 ]
-
-[[package]]
-name = "cty"
-version = "0.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7313c0d620d0cb4dbd9d019e461a4beb501071ff46ec0ab933efb4daa76d73e3"
 
 [[package]]
 name = "debugid"
@@ -1946,7 +1936,7 @@ dependencies = [
 name = "natives"
 version = "0.1.0"
 dependencies = [
- "blake2b-rs 0.2.0",
+ "blake2b-ref",
  "ckb-std 0.7.2 (git+https://github.com/nervosnetwork/ckb-std?rev=144cfae)",
 ]
 
@@ -1965,7 +1955,7 @@ dependencies = [
 name = "nft-validator"
 version = "0.1.0"
 dependencies = [
- "blake2b-rs 0.2.0",
+ "blake2b-ref",
  "ckb-std 0.7.2 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 

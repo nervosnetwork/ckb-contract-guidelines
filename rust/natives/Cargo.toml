@@ -5,7 +5,7 @@ edition = "2018"
 autobins = false
 
 [dependencies]
-blake2b-rs = "0.2.0"
+blake2b-ref = "0.1.0"
 ckb-std = { git = "https://github.com/nervosnetwork/ckb-std", rev = "144cfae", features = ["ckb-types", "simulator"] }
 
 [[bin]]

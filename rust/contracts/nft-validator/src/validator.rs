@@ -5,7 +5,7 @@ use core::result::Result;
 // https://doc.rust-lang.org/alloc/index.html
 use alloc::{collections::btree_set::BTreeSet, vec::Vec};
 
-use blake2b_rs::Blake2bBuilder;
+use blake2b_ref::Blake2bBuilder;
 
 // Import CKB syscalls and structures
 // https://nervosnetwork.github.io/ckb-std/riscv64imac-unknown-none-elf/doc/ckb_std/index.html
