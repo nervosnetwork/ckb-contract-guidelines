@@ -1,0 +1,13 @@
+[package]
+name = "natives"
+version = "0.1.0"
+edition = "2018"
+autobins = false
+
+[dependencies]
+blake2b-rs = "0.2.0"
+ckb-std = { git = "https://github.com/nervosnetwork/ckb-std", rev = "144cfae", features = ["ckb-types", "simulator"] }
+
+[[bin]]
+name = "nft_validator"
+path = "src/nft_validator.rs"

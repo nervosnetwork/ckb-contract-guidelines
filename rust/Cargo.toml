@@ -1,5 +1,5 @@
 [workspace]
-members = ["tests", "contracts/nft-validator"]
+members = ["tests", "contracts/nft-validator", "natives"]
 
 [profile.release]
 overflow-checks = true
