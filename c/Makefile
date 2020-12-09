@@ -8,8 +8,12 @@ LDFLAGS := -Wl,-static -fdata-sections -ffunction-sections -Wl,--gc-sections
 ENVIRONMENT := debug
 
 SIMULATOR_CC := gcc
+SIMULATOR_CLANG := clang
 SIMULATOR_LIB := deps/simulator/target/release/libckb_x64_simulator.a
-SIMULATOR_CFLAGS := -fno-builtin-printf -fno-builtin-memcmp -I deps/ckb-c-stdlib -I deps/ckb-c-stdlib/molecule -Wall -Werror -Wno-nonnull -Wno-nonnull-compare -Wno-unused-function -g -DCKB_STDLIB_NO_SYSCALL_IMPL -fprofile-arcs -ftest-coverage -DBLAKE2_REF_C
+SIMULATOR_CFLAGS := -fno-builtin-printf -fno-builtin-memcmp -I deps/ckb-c-stdlib -I deps/ckb-c-stdlib/molecule -Wall -Werror -Wno-nonnull -Wno-unused-function -g -DCKB_STDLIB_NO_SYSCALL_IMPL -DBLAKE2_REF_C
+SIMULATOR_COVERAGE_CFLAGS := -fprofile-arcs -ftest-coverage -Wno-nonnull-compare
+SIMULATOR_UNDEFINED_CFLAGS := -fsanitize=undefined -fsanitize=implicit-conversion -fsanitize=local-bounds -fsanitize=unsigned-integer-overflow -fsanitize=nullability
+SIMULATOR_ADDRESS_CFLAGS := -fsanitize=address
 SIMULATOR_LDFLAGS := -lpthread -ldl
 
 # docker pull nervos/ckb-riscv-gnu-toolchain:gnu-bionic-20191012
@@ -24,7 +28,7 @@ simulators: build/$(ENVIRONMENT)/simple_udt_sim build/$(ENVIRONMENT)/bin_sample_
 
 test: all simulators
 	cd tests && cargo test
-	scripts/run_sim_tests.sh $(ENVIRONMENT)
+	ASAN_OPTIONS=detect_odr_violation=0 scripts/run_sim_tests.sh $(ENVIRONMENT)
 
 coverage: test
 	mkdir -p build/coverage
@@ -32,15 +36,21 @@ coverage: test
 
 build/$(ENVIRONMENT)/simple_udt_sim: simple_udt.c ${SIMULATOR_LIB}
 	mkdir -p build/$(ENVIRONMENT)
-	$(SIMULATOR_CC) $(SIMULATOR_CFLAGS) $(SIMULATOR_LDFLAGS) -o $@ $^
+	$(SIMULATOR_CC) $(SIMULATOR_CFLAGS) $(SIMULATOR_COVERAGE_CFLAGS) $(SIMULATOR_LDFLAGS) -o $@ $^
+	$(SIMULATOR_CLANG) $(SIMULATOR_CFLAGS) $(SIMULATOR_UNDEFINED_CFLAGS) $(SIMULATOR_LDFLAGS) -o $@.ubsan $^
+	$(SIMULATOR_CLANG) $(SIMULATOR_CFLAGS) $(SIMULATOR_ADDRESS_CFLAGS) $(SIMULATOR_LDFLAGS) -o $@.asan $^
 
 build/$(ENVIRONMENT)/bin_sample_sim: bin_sample.c ${SIMULATOR_LIB}
 	mkdir -p build/$(ENVIRONMENT)
 	$(SIMULATOR_CC) $(SIMULATOR_CFLAGS) $(SIMULATOR_LDFLAGS) -o $@ $^
+	$(SIMULATOR_CLANG) $(SIMULATOR_CFLAGS) $(SIMULATOR_UNDEFINED_CFLAGS) $(SIMULATOR_LDFLAGS) -o $@.ubsan $^
+	$(SIMULATOR_CLANG) $(SIMULATOR_CFLAGS) $(SIMULATOR_ADDRESS_CFLAGS) $(SIMULATOR_LDFLAGS) -o $@.asan $^
 
 build/$(ENVIRONMENT)/lib_sample_sim.so: lib_sample.c ${SIMULATOR_LIB}
 	mkdir -p build/$(ENVIRONMENT)
 	$(SIMULATOR_CC) $(SIMULATOR_CFLAGS) $(SIMULATOR_LDFLAGS) -shared -fPIC -o $@ $^
+	$(SIMULATOR_CLANG) $(SIMULATOR_CFLAGS) $(SIMULATOR_UNDEFINED_CFLAGS) $(SIMULATOR_LDFLAGS) -shared -fPIC -o $@.ubsan $^
+	$(SIMULATOR_CLANG) $(SIMULATOR_CFLAGS) $(SIMULATOR_ADDRESS_CFLAGS) $(SIMULATOR_LDFLAGS) -shared -fPIC -o $@.asan $^
 
 build/$(ENVIRONMENT)/simple_udt: simple_udt.c
 	mkdir -p build/$(ENVIRONMENT)
@@ -70,6 +80,7 @@ dist: clean all simulators
 
 fmt:
 	clang-format -i -style=Google $(wildcard *.h *.c)
+	cd tests; cargo fmt --all
 	git diff --exit-code
 
 .PHONY: all all-via-docker simulators clean dist fmt test coverage

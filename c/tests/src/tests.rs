@@ -15,6 +15,7 @@ use rand::{thread_rng, Rng};
 use serde_json::to_string_pretty;
 use std::collections::HashMap;
 use std::fs;
+use std::io::Write;
 use std::path::PathBuf;
 
 pub fn ckb_hash(data: &[u8]) -> Bytes {
@@ -89,12 +90,24 @@ pub fn build_mock_transaction(tx: &TransactionView, context: &Context) -> MockTr
     }
 }
 
+pub fn rewrite_setup(setup: &RunningSetup, binary_suffix: &str) -> RunningSetup {
+    let mut setup2 = setup.clone();
+    setup2.native_binaries = setup
+        .native_binaries
+        .iter()
+        .map(|(key, binary)| (key.clone(), format!("{}{}", binary, binary_suffix)))
+        .collect();
+    setup2
+}
+
 pub fn write_native_setup(
     test_name: &str,
     binary_name: &str,
     tx: &TransactionView,
     context: &Context,
     setup: &RunningSetup,
+    return_code: i8,
+    enable_sanitizers: bool,
 ) {
     let folder = create_test_folder(test_name);
     let mock_tx = build_mock_transaction(&tx, &context);
@@ -103,16 +116,59 @@ pub fn write_native_setup(
     fs::write(folder.join("tx.json"), tx_json).expect("write tx to local file");
     let setup_json = to_string_pretty(setup).expect("serialize to json");
     fs::write(folder.join("setup.json"), setup_json).expect("write setup to local file");
-    fs::write(
-        folder.join("cmd"),
-        format!(
-            "CKB_TX_FILE=\"{}\" CKB_RUNNING_SETUP=\"{}\" \"{}\"",
-            folder.join("tx.json").to_str().expect("utf8"),
-            folder.join("setup.json").to_str().expect("utf8"),
-            Loader::default().path(binary_name).to_str().expect("utf8")
-        ),
+
+    let mut cmd_file = fs::File::create(folder.join("cmd")).expect("create cmd file");
+    write!(
+        &mut cmd_file,
+        "CKB_TX_FILE=\"{}\" CKB_RUNNING_SETUP=\"{}\" \"{}\" 2> err\n",
+        folder.join("tx.json").to_str().expect("utf8"),
+        folder.join("setup.json").to_str().expect("utf8"),
+        Loader::default().path(binary_name).to_str().expect("utf8")
     )
-    .expect("write cmd to local file");
+    .expect("write");
+    write!(&mut cmd_file, "error_code=$?\nif [ $error_code -ne {} ]; then\n    echo \"Return code $error_code is invalid!\"\n    cat err\n    exit 1\nfi\n", return_code as u8).expect("write");
+
+    if enable_sanitizers {
+        let ubsan_setup = rewrite_setup(setup, ".ubsan");
+        let ubsan_setup_json = to_string_pretty(&ubsan_setup).expect("serialize to json");
+        fs::write(folder.join("ubsan_setup.json"), ubsan_setup_json)
+            .expect("write setup to local file");
+
+        write!(
+            &mut cmd_file,
+            "CKB_TX_FILE=\"{}\" CKB_RUNNING_SETUP=\"{}\" \"{}.ubsan\" 2> err\n",
+            folder.join("tx.json").to_str().expect("utf8"),
+            folder.join("ubsan_setup.json").to_str().expect("utf8"),
+            Loader::default().path(binary_name).to_str().expect("utf8")
+        )
+        .expect("write");
+        write!(&mut cmd_file, "error_code=$?\nif [ $error_code -ne {} ]; then\n    echo \"Return code $error_code is invalid!\"\n    cat err\n    exit 1\nfi\n", return_code as u8).expect("write");
+        write!(
+            &mut cmd_file,
+            "if [ -s err ]; then\n    echo \"Errors in stderr!\"\n    cat err\n    exit 1\nfi\n"
+        )
+        .expect("write");
+
+        let asan_setup = rewrite_setup(setup, ".asan");
+        let asan_setup_json = to_string_pretty(&asan_setup).expect("serialize to json");
+        fs::write(folder.join("asan_setup.json"), asan_setup_json)
+            .expect("write setup to local file");
+
+        write!(
+            &mut cmd_file,
+            "CKB_TX_FILE=\"{}\" CKB_RUNNING_SETUP=\"{}\" \"{}.asan\" 2> err\n",
+            folder.join("tx.json").to_str().expect("utf8"),
+            folder.join("asan_setup.json").to_str().expect("utf8"),
+            Loader::default().path(binary_name).to_str().expect("utf8")
+        )
+        .expect("write");
+        write!(&mut cmd_file, "error_code=$?\nif [ $error_code -ne {} ]; then\n    echo \"Return code $error_code is invalid!\"\n    cat err\n    exit 1\nfi\n", return_code as u8).expect("write");
+        write!(
+            &mut cmd_file,
+            "if [ -s err ]; then\n    echo \"Errors in stderr!\"\n    cat err\n    exit 1\nfi\n"
+        )
+        .expect("write");
+    }
 }
 
 const MAX_CYCLES: u64 = 10_000_000;
@@ -197,7 +253,15 @@ fn test_sudt_transfer() {
         script_index: 0,
         native_binaries: HashMap::default(),
     };
-    write_native_setup("sudt_transfer", "simple_udt_sim", &tx, &context, &setup);
+    write_native_setup(
+        "sudt_transfer",
+        "simple_udt_sim",
+        &tx,
+        &context,
+        &setup,
+        0,
+        true,
+    );
 }
 
 #[test]
@@ -285,6 +349,8 @@ fn test_sudt_transfer_failure() {
         &tx,
         &context,
         &setup,
+        -52,
+        true,
     );
 }
 
@@ -393,5 +459,7 @@ fn test_dynamic_linking_ok() {
         &tx,
         &context,
         &setup,
+        0,
+        true,
     );
 }
